@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { BaseLLMProvider } from 'src/core/abstracts/base-llm.provider';
 import { ProviderEnum } from 'src/core/enums/provider-enum';
 import { ProviderError } from 'src/core/errors/provider-error';
+import { ChatMessage } from '../../core/interfaces/message.interface';
+import { FunctionDefinition } from '../../core/interfaces/function.interface';
 
 @Injectable()
 export class LlmService implements OnModuleInit {
@@ -15,8 +17,13 @@ export class LlmService implements OnModuleInit {
     private configService: ConfigService,
     private bedrockProvider: BedrockProvider,
   ) {}
-  onModuleInit() {
+  async onModuleInit() {
+    console.log('Initializing LLM service', {
+      OPENAI: this.configService.get('openai.enabled'),
+      BEDROCK: this.configService.get('bedrock.enabled'),
+    });
     if (this.configService.get('openai.enabled')) {
+      await this.openAIProvider.initialize();
       this.providers.set(ProviderEnum.OPENAI, this.openAIProvider);
     }
     if (this.configService.get('bedrock.enabled')) {
@@ -36,14 +43,14 @@ export class LlmService implements OnModuleInit {
     }
   }
   async chat(
-    messages: string[],
+    messages: ChatMessage[],
     options?: {
       provider?: ProviderEnum;
       model?: string;
       maxTokens?: number;
       temperature?: number;
       topP?: number;
-      functions?: { name: string; arguments: string }[];
+      functions?: FunctionDefinition[];
     },
   ) {
     const provider = this.getProvider(

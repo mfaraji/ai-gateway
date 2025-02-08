@@ -1,15 +1,14 @@
+import { ChatMessage } from '../interfaces/message.interface';
+import { FunctionDefinition } from '../interfaces/function.interface';
 export abstract class BaseLLMProvider {
   abstract chat(
-    messages: string[],
+    messages: ChatMessage[],
     options?: {
       model?: string;
       maxTokens?: number;
       temperature?: number;
       topP?: number;
-      functions?: {
-        name: string;
-        arguments: string;
-      }[];
+      functions?: FunctionDefinition[];
     },
   ): any;
 

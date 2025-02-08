@@ -1,106 +1,89 @@
-import { Type } from 'class-transformer';
 import {
-  IsString,
-  IsOptional,
-  IsNumber,
   IsArray,
-  IsEnum,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
   ValidateNested,
-  Min,
-  Max,
-  ArrayMinSize,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ChatMessageDto } from './base.dto';
+import {
+  FunctionDefinition,
+  FunctionSchema,
+} from '../../../core/interfaces/function.interface';
 
-export enum ChatRole {
-  SYSTEM = 'system',
-  USER = 'user',
-  ASSISTANT = 'assistant',
-  FUNCTION = 'function',
-}
-
-export class ChatMessage {
-  @IsEnum(ChatRole)
-  role: ChatRole;
-
+// ✅ Defines a function's schema
+export class FunctionSchemaDto implements FunctionSchema {
   @IsString()
-  content: string;
+  type: string;
 
   @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  functionCall?: {
-    name: string;
-    arguments: string;
-  };
-}
-
-export class FunctionDefinition {
-  @IsString()
-  name: string;
-
-  @IsString()
-  description: string;
-
-  parameters: Record<string, any>;
-}
-
-export class ChatRequestDto {
-  @IsArray()
-  @ArrayMinSize(1)
-  @ValidateNested({ each: true })
-  @Type(() => ChatMessage)
-  messages: ChatMessage[];
-
-  @IsOptional()
-  @IsString()
-  model?: string;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(4096)
-  maxTokens?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(2)
-  temperature?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(1)
-  topP?: number;
-
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => FunctionDefinition)
-  functions?: FunctionDefinition[];
-
-  @IsOptional()
-  @IsString()
-  functionCall?: string | 'auto' | 'none';
+  properties?: Record<string, any>; // Generic object for flexibility
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  stop?: string[];
+  required?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  additionalProperties?: boolean;
+}
+
+// ✅ Defines function metadata
+export class FunctionDefinitionDto implements FunctionDefinition {
+  @IsString()
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ValidateNested()
+  @Type(() => FunctionSchemaDto)
+  parameters: FunctionSchemaDto;
+}
+
+// ✅ Defines available tools (functions)
+export class ToolDto {
+  @IsString()
+  type: string; // ✅ Currently, only "function" is allowed
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => FunctionDefinitionDto)
+  function: FunctionDefinitionDto;
+}
+
+// ✅ OpenAI Chat API Request DTO
+export class ChatRequestDto {
+  @IsString()
+  model: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChatMessageDto)
+  messages: ChatMessageDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ToolDto)
+  tools?: ToolDto[];
+
+  @IsOptional()
+  @IsString()
+  tool_choice?: 'auto' | string;
 
   @IsOptional()
   @IsNumber()
-  @Min(-2)
-  @Max(2)
-  presencePenalty?: number;
+  @IsPositive()
+  temperature?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(-2)
-  @Max(2)
-  frequencyPenalty?: number;
-
-  @IsOptional()
-  stream?: boolean;
+  @IsPositive()
+  max_tokens?: number;
 }

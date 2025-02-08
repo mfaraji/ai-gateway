@@ -1,14 +1,16 @@
 import { BaseLLMProvider } from 'src/core/abstracts/base-llm.provider';
+import { ChatMessage } from '../../core/interfaces/message.interface';
+import { FunctionDefinition } from '../../core/interfaces/function.interface';
 
 export class BedrockProvider extends BaseLLMProvider {
   chat(
-    messages: string[],
+    messages: ChatMessage[],
     options?: {
       model?: string;
       maxTokens?: number;
       temperature?: number;
       topP?: number;
-      functions?: { name: string; arguments: string }[];
+      functions?: FunctionDefinition[];
     },
   ) {
     throw new Error('Method not implemented.');

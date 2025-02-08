@@ -8,6 +8,7 @@ export interface LLMProviderConfig {
     burstLimit: number;
     requestsPerMinute: number;
   };
+  organization?: string;
 }
 export interface Config {
   port?: number;
@@ -59,8 +60,9 @@ export default (): Config => ({
   environment: process.env.NODE_ENV as 'development' | 'production' | 'test',
   openai: {
     enabled: process.env.OPENAI_ENABLED === 'true',
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENAI_SECRET,
     baseUrl: process.env.OPENAI_BASE_URL,
+    organization: process.env.OPENAI_ORGANIZATION,
     timeout: parseInt(process.env.OPENAI_TIMEOUT, 10),
     maxRetries: parseInt(process.env.OPENAI_MAX_RETRIES, 10),
     rateLimit: {

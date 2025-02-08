@@ -3,26 +3,31 @@ import { BaseLLMProvider } from '../../core/abstracts/base-llm.provider';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 import { ProviderError } from 'src/core/errors/provider-error';
+import { ChatMessage } from '../../core/interfaces/message.interface';
+import { FunctionDefinition } from '../../core/interfaces/function.interface';
 
 @Injectable()
 export class OpenAIProvider extends BaseLLMProvider {
   private openai: OpenAI;
   private readonly config: any;
+  private initialized = false;
 
   constructor(private configService: ConfigService) {
     super();
     this.config = configService.get('openai');
   }
 
-  async onModuleInit() {
+  async initialize() {
+    if (this.initialized) return;
+    console.log('Initializing OpenAI client');
     try {
       this.openai = new OpenAI({
         apiKey: this.config.apiKey,
         baseURL: this.config.baseUrl,
-        timeout: this.config.timeout,
-        maxRetries: this.config.maxRetries,
+        timeout: this.config.timeout || 5000,
+        maxRetries: this.config.maxRetries || 3,
       });
-      await this.openai.models.list();
+      this.initialized = true;
     } catch (error) {
       throw new ProviderError(
         `Failed to initialize OpenAI provider: \${error.message}`,
@@ -31,28 +36,39 @@ export class OpenAIProvider extends BaseLLMProvider {
       );
     }
   }
-  chat(
-    messages: string[],
+  async chat(
+    messages: ChatMessage[],
     options?: {
       model?: string;
-      temperature?: number;
       maxTokens?: number;
+      temperature?: number;
       topP?: number;
-      frequencyPenalty?: number;
-      presencePenalty?: number;
+      functions?: FunctionDefinition[];
     },
-  ) {
+  ): Promise<any> {
+    if (!this.initialized) {
+      await this.initialize();
+    }
     return this.openai.chat.completions.create({
       messages: messages.map((message) => ({
-        role: 'user',
-        content: message,
+        role: message.role,
+        content: message.content,
+        tool_call_id: message.tool_call_id,
       })),
       model: options?.model || this.config.defaultModel,
       temperature: options?.temperature || 0.7,
       max_tokens: options?.maxTokens || 150,
       top_p: options?.topP || 1,
-      frequency_penalty: options?.frequencyPenalty || 0,
-      presence_penalty: options?.presencePenalty || 0,
+      functions: options?.functions?.map((fn) => ({
+        name: fn.name,
+        description: fn.description,
+        parameters: {
+          type: 'object',
+          properties: fn.parameters.properties,
+          required: fn.parameters.required,
+          additionalProperties: fn.parameters.additionalProperties,
+        },
+      })),
     });
   }
   async getAvailableModels(): Promise<string[]> {

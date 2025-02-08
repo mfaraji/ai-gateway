@@ -7,7 +7,7 @@ import { APP_PIPE } from '@nestjs/core';
 import { ProvidersModule } from './modules/providers/providers.module';
 
 @Module({
-  imports: [LlmModule, AppConfigModule, ProvidersModule],
+  imports: [AppConfigModule, LlmModule, ProvidersModule],
   controllers: [AppController],
   providers: [
     AppService,

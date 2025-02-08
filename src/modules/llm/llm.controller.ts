@@ -22,13 +22,27 @@ export class LlmController {
     @Body() requestDto: ChatRequestDto,
     @Headers('x-provider') provider: string,
   ): Promise<ChatResponseDto> {
-    return this.llmService.chat(requestDto.messages, {
+    const messages = requestDto.messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+      tool_call_id: message.tool_call_id,
+    }));
+    const functions = requestDto.tools?.map((tool) => ({
+      name: tool.function.name,
+      description: tool.function.description,
+      parameters: {
+        type: tool.function.parameters.type,
+        properties: tool.function.parameters.properties,
+        required: tool.function.parameters.required,
+        additionalProperties: tool.function.parameters.additionalProperties,
+      },
+    }));
+    return this.llmService.chat(messages, {
       provider: provider as ProviderEnum,
       model: requestDto.model,
-      maxTokens: requestDto.maxTokens,
+      maxTokens: requestDto.max_tokens,
       temperature: requestDto.temperature,
-      topP: requestDto.topP,
-      functions: requestDto.functions,
+      functions: functions,
     });
   }
 
